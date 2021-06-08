@@ -84,7 +84,7 @@ namespace AutoIndexNumAdder {
             var max = ix + vm.Files.Count - 1;
             var fmt = "{0:D" + max.ToString().Length + "}";
 
-            //既存のファイルの桁揃え
+            //既存のファイルの桁揃え（YesNoしても良いけど個人的に強制で。）
             var r = new Regex($"^{vm.Prefix}(\\d+)\\.[^.]+$");
             var exists = Directory.GetFiles(dir)
                 .Where(f => r.IsMatch(new FileInfo(f).Name)).ToList();
@@ -100,6 +100,9 @@ namespace AutoIndexNumAdder {
                 var fn = vm.Prefix + string.Format(fmt, ix++) + fi.Extension;
                 fi.MoveTo(System.IO.Path.Combine(fi.DirectoryName, fn));
             }
+
+            //クリア
+            vm.Files.Clear();
         }
         /// <summary>
         /// dir内のprefix+番号のファイルを取得し、その番号の最大値+1を返します
