@@ -5,7 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AutoIndexNumAdder"
         mc:Ignorable="d"
-        Title="MainWindow" Height="250" Width="400" SizeToContent="Height" ResizeMode="NoResize">
+        Title="MainWindow" Height="250" Width="400" SizeToContent="Height" ResizeMode="NoResize" KeyDown="Window_KeyDown">
+    <Window.Resources>
+        <local:NotZeroIntToTrueConverter x:Key="NotZeroIntToTrueConverter"/>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="25"/>
@@ -15,18 +18,18 @@
         </Grid.RowDefinitions>
         <DockPanel Grid.Row="0" VerticalAlignment="Center">
             <TextBlock Text="Prefix:"/>
-            <TextBox Text="{Binding Prefix}"/>
+            <TextBox Text="{Binding Prefix,UpdateSourceTrigger=PropertyChanged}"/>
         </DockPanel>
         <DockPanel Grid.Row="1" VerticalAlignment="Center">
             <TextBlock Text="Start Index:"/>
             <TextBox Text="{Binding StartIndex,UpdateSourceTrigger=PropertyChanged}" TextChanged="TextBox_TextChanged"/>
         </DockPanel>
-        <ListBox x:Name="listBox1" Grid.Row="2" ItemsSource="{Binding Files}" SelectedItem="{Binding SelectedFile}" SelectionMode="Single"
+        <ListBox x:Name="listBox1" Grid.Row="2" ItemsSource="{Binding Files,UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedFile}" SelectionMode="Single"
                  AllowDrop="True" DragEnter="listBox1_DragEnter" Drop="listBox1_Drop"/>
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Left">
             <Button Content="Delete" Margin="0,0,5,0" IsEnabled="{Binding ElementName=listBox1, Path=SelectedItems.Count}" Click="Button_Click"/>
             <Button Content="All Clear" Margin="0,0,5,0" Click="Button_Click_1"/>
-            <Button Content="Add Index Number" Click="Button_Click_2"/>
+            <Button Content="Add Index Number" Click="Button_Click_2" IsEnabled="{Binding ElementName=listBox1, Path=Items.Count, Converter={StaticResource NotZeroIntToTrueConverter}}"/>
         </StackPanel>
     </Grid>
 </Window>

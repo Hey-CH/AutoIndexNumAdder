@@ -16,6 +16,7 @@ using System.Windows.Shapes;
 using System.IO;
 using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace AutoIndexNumAdder {
     /// <summary>
@@ -74,10 +75,22 @@ namespace AutoIndexNumAdder {
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e) {
-            if (vm.Files.Count <= 0) {
-                MessageBox.Show("ファイルをドラッグ＆ドロップしてください。");
-                return;
+            AddIndexNum();
+        }
+
+        //Enterキーでも実行[2021/07/24]
+        private void Window_KeyDown(object sender, KeyEventArgs e) {
+            if (e.Key == Key.Enter && vm.Files.Count > 0) {
+                AddIndexNum();
             }
+        }
+
+        private void AddIndexNum() {
+            //ファイルをセットしないと実行しないようにしたのでコメント[2021/07/24]
+            //if (vm.Files.Count <= 0) {
+            //    MessageBox.Show("ファイルをドラッグ＆ドロップしてください。");
+            //    return;
+            //}
 
             var dir = new FileInfo(vm.Files[0].Path).Directory.FullName;
             var ix = GetTrueStartIndex(dir, vm.Prefix);
@@ -88,7 +101,7 @@ namespace AutoIndexNumAdder {
             var r = new Regex($"^{vm.Prefix}(\\d+)\\.[^.]+$");
             var exists = Directory.GetFiles(dir)
                 .Where(f => r.IsMatch(new FileInfo(f).Name)).ToList();
-            foreach (var f in exists) {
+            foreach (var f in exists.Except(vm.Files.Select(f => f.Path))) {//変更するファイルは桁ぞろえしない
                 var fi = new FileInfo(f);
                 var fn = vm.Prefix + string.Format(fmt, GetFileNumber(f, vm.Prefix)) + fi.Extension;
                 if (fi.Name.ToLower() != fn.ToLower()) fi.MoveTo(System.IO.Path.Combine(fi.DirectoryName, fn));
@@ -112,10 +125,12 @@ namespace AutoIndexNumAdder {
         /// <returns>重複しないような最初のIndex値</returns>
         private long GetTrueStartIndex(string dir, string prefix) {
             var r = new Regex($"^{prefix}(\\d+)\\.[^.]+$");
-            var tmp = Directory.GetFiles(dir)
-                .Where(f => r.IsMatch(new FileInfo(f).Name))
-                .Select(f => GetFileNumber(f,vm.Prefix)).Max() + 1;
-            return long.Parse(vm.StartIndex) > tmp ? long.Parse(vm.StartIndex) : tmp;
+            //prefixで始まるファイルが無い場合を考えていなかったので修正[2021/07/24]
+            var tmp = Directory.GetFiles(dir).Where(f => r.IsMatch(new FileInfo(f).Name));
+            var fidx = tmp.Count() > 0 ? tmp.Select(f => GetFileNumber(f, vm.Prefix)).Max() + 1 : 0;//prefixが付いたファイルの最大値+1 or ファイルが無い場合0
+            var iidx = long.Parse(vm.StartIndex);//入力されている数値
+            //存在するファイルのIndexより入力値の方が大きい場合そちらを設定する
+            return fidx < iidx ? iidx : fidx;
         }
         /// <summary>
         /// 指定されたファイルの接頭辞＋番号で表される番号を返します
@@ -158,7 +173,13 @@ namespace AutoIndexNumAdder {
                 OnPropertyChanged(nameof(SelectedFile));
             }
         }
+        public bool Executable {
+            get { return Files.Count > 0; }
+        }
     }
+    /// <summary>
+    /// ファイルの情報を格納するクラス
+    /// </summary>
     public class FileInformation {
         public string Path { get; set; }
         public string Name { get { return new FileInfo(Path).Name; } }
@@ -169,6 +190,19 @@ namespace AutoIndexNumAdder {
         }
         public override string ToString() {
             return Name;
+        }
+    }
+    /// <summary>
+    /// 0じゃないintをTrueで返すコンバーター
+    /// </summary>
+    public class NotZeroIntToTrueConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) {
+            return ((int)value) > 0;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) {
+            var tmp = (bool)value;
+            return tmp ? 1 : 0;
         }
     }
 }
